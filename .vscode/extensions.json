@@ -1,0 +1,8 @@
+{
+  "recommendations": [
+      "ms-vscode.csharp",
+      "unity.unity-debug",
+      "kleber-swf.unity-code-snippets",
+      "robertohuertasm.vscode-icons"
+  ]
+}
