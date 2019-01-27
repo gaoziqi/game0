@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(CharacterController))]
-public class EasyTouchController : MonoBehaviour
+public class ETController : MonoBehaviour
 {
 
   [Range(1f, 5f)]
-  public float MovementSpeed = 1f;
+  public float MovementSpeed = 3f;
 
   [Range(1, 200f)]
   public float LookSensitivity = 10f;
@@ -17,8 +17,12 @@ public class EasyTouchController : MonoBehaviour
 
   //获取到场景中的Joystick
   public ETCJoystick moveJoystick;
-  public ETCJoystick lookJoystick;
 
+  public Vector3 debugGro = new Vector3(0.0f, 270.0f, 90.0f);
+  public bool isDebug = false;
+
+  private const float lowPassFilterFactor = 0.2f;
+  private Vector3 v = new Vector3(0f, 0f, 0f);
 
   //获取场景中的Button
   // public ETCButton controlETCButton;
@@ -31,14 +35,19 @@ public class EasyTouchController : MonoBehaviour
   private float timeInAir = 0f;
   private bool jumpLocked = false;
 
+
+
   void Start()
   {
     this.characterController = this.GetComponent<CharacterController>();
     this.cameraTransform = this.GetComponentInChildren<Camera>().transform;
     this.moveJoystick = ETCInput.GetControlJoystick("MoveJoystick");
-    this.lookJoystick = ETCInput.GetControlJoystick("LookJoystick");
-    Cursor.visible = false;
+    Cursor.visible = true;
     Cursor.lockState = CursorLockMode.Confined;
+    //陀螺仪的设置
+    Input.gyro.enabled = true;
+    Input.compensateSensors = true;
+    Input.gyro.updateInterval = 0.01f;
   }
 
   void Update()
@@ -57,9 +66,15 @@ public class EasyTouchController : MonoBehaviour
     {
       this.transform.position += Vector3.down * verticalMovement;
     }
-    this.transform.rotation = Quaternion.AngleAxis(this.lookJoystick.axisX.axisValue * Time.deltaTime * this.LookSensitivity, Vector3.up) * this.transform.rotation;
-    this.cameraTilt = Mathf.Clamp(this.cameraTilt - this.lookJoystick.axisY.axisValue * this.LookSensitivity * Time.deltaTime, -90f, 90f);
-    this.cameraTransform.localRotation = Quaternion.AngleAxis(this.cameraTilt, Vector3.right);
+    // this.transform.rotation = Quaternion.AngleAxis(this.lookJoystick.axisX.axisValue * Time.deltaTime * this.LookSensitivity, Vector3.up) * this.transform.rotation;
+    // this.cameraTilt = Mathf.Clamp(this.cameraTilt - this.lookJoystick.axisY.axisValue * this.LookSensitivity * Time.deltaTime, -90f, 90f);
+    // this.cameraTransform.localRotation = Quaternion.AngleAxis(this.cameraTilt, Vector3.right);
+
+    // this.transform.localRotation = (isDebug ? Quaternion.Euler(debugGro) : Input.gyro.attitude) * new Quaternion(0, 0, 1, 0);
+    this.v = isDebug ? debugGro : (Input.gyro.attitude * new Quaternion(0, 0, 1, 0)).eulerAngles;
+    // this.transform.localRotation = Quaternion.Euler(new Vector3(0, -this.v.y, 0));
+    // this.cameraTransform.localRotation = Quaternion.Euler(new Vector3(90 - this.v.x, 0, 0));
+    this.transform.localRotation = Quaternion.Euler(this.v) * Quaternion.Euler(new Vector3(90f, 90f, 0f));
 
     if (touchesGround)
     {
@@ -103,6 +118,11 @@ public class EasyTouchController : MonoBehaviour
       }
       this.cameraTilt = 24;
     }
+  }
+
+  void OnGUI()
+  {
+    GUI.Label(new Rect(50, 100, 500, 20), "Label : " + this.v.x + "       " + this.v.y + "         " + this.v.z);
   }
 
   public void Enable()
